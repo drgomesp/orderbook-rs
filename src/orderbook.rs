@@ -11,8 +11,8 @@ type Trade = ();
 #[derive(Debug)]
 pub enum OrderBookError {
     OrderAlreadyExists(String),
-    InvalidVolume,
-    InvalidPrice,
+    OrderVolumeZero,
+    OrderPriceZero,
 }
 
 impl fmt::Display for OrderBookError {
@@ -21,10 +21,10 @@ impl fmt::Display for OrderBookError {
             OrderBookError::OrderAlreadyExists(id) => {
                 write!(f, "order with id {} already exists", id)
             }
-            OrderBookError::InvalidVolume => {
+            OrderBookError::OrderVolumeZero => {
                 write!(f, "order volume must be greater than zero")
             }
-            OrderBookError::InvalidPrice => {
+            OrderBookError::OrderPriceZero => {
                 write!(f, "order price must be greater than zero")
             }
         }
@@ -58,11 +58,11 @@ impl OrderBook {
         }
 
         if order.volume == 0.0 {
-            return Err(OrderBookError::InvalidVolume);
+            return Err(OrderBookError::OrderVolumeZero);
         }
 
         if order.price == 0.0 {
-            return Err(OrderBookError::InvalidPrice);
+            return Err(OrderBookError::OrderPriceZero);
         }
 
         let order = Arc::new(Mutex::new(order));
