@@ -37,7 +37,11 @@ impl Error for OrderBookError {}
 pub struct OrderBook {
     /// `orders` is a hash map of orders where the key is the order id.
     orders: HashMap<String, Arc<Mutex<Order>>>,
+
+    /// The buy orders side.
     bids: OrderSide,
+
+    /// The sell orders side.
     asks: OrderSide,
 }
 
