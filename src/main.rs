@@ -3,11 +3,32 @@ pub mod orderbook;
 mod orderside;
 
 fn main() {
-    println!("Hello, world!");
+    let mut ob = OrderBook::new();
+    let s1 = Order::new(Sell, "sell-1".into(), 99.94, 10.0);
+    let s2 = Order::new(Sell, "sell-2".into(), 99.96, 25.0);
+    let s3 = Order::new(Sell, "sell-3".into(), 99.98, 20.0);
+    let s4 = Order::new(Sell, "sell-4".into(), 99.94, 25.0);
+
+    let b1 = Order::new(Buy, "buy-1".into(), 99.93, 10.0);
+    let b2 = Order::new(Buy, "buy-2".into(), 99.95, 20.0);
+    let b3 = Order::new(Buy, "buy-3".into(), 99.95, 10.0);
+
+    let _ = ob.add_order(s1).expect("add order failed");
+    let _ = ob.add_order(s2).expect("add order failed");
+    let _ = ob.add_order(s3).expect("add order failed");
+    let _ = ob.add_order(s4).expect("add order failed");
+
+    let _ = ob.add_order(b1).expect("add order failed");
+    let _ = ob.add_order(b2).expect("add order failed");
+    let _ = ob.add_order(b3).expect("add order failed");
+
+    println!("{ob}")
 }
 
-#[cfg(test)]
 use crate::order::Order;
+use crate::order::OrderKind::{Buy, Sell};
+use crate::orderbook::OrderBook;
+
 mod tests {
     use crate::order::Order;
     use crate::order::OrderKind::{Buy, Sell};

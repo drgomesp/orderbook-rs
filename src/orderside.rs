@@ -5,17 +5,22 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug)]
 pub struct OrderQueue {
     orders: LinkedList<Arc<Mutex<Order>>>,
+    pub volume: f64,
 }
 
 impl OrderQueue {
     fn new() -> OrderQueue {
         OrderQueue {
             orders: LinkedList::new(),
+            volume: 0.0,
         }
     }
 
     fn add(&mut self, order: Arc<Mutex<Order>>) {
-        self.orders.push_back(order);
+        let order = order.lock().unwrap();
+
+        self.volume += order.volume;
+        self.orders.push_back(Arc::new(Mutex::new(order.clone())));
     }
 }
 
@@ -23,7 +28,7 @@ impl OrderQueue {
 pub struct OrderSide {
     /// `price_tree` is an ordered map (binary tree) where the key
     /// is the price and the value is the order list for that price.
-    price_tree: BTreeMap<String, Arc<Mutex<OrderQueue>>>,
+    pub price_tree: BTreeMap<String, Arc<Mutex<OrderQueue>>>,
 
     /// `price_map` is a hash map where the key is the price
     /// and the value is the order list for that price.
@@ -41,6 +46,7 @@ impl OrderSide {
         let clone = order.clone();
         let order = order.lock().expect("order lock failed");
         let (price, volume) = (order.price, order.volume);
+        drop(order);
 
         match self.price_map.get_mut(price.to_string().as_str()) {
             Some(queue) => {
