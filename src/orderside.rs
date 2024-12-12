@@ -1,26 +1,28 @@
 use crate::order::Order;
-use std::collections::{BTreeMap, HashMap, LinkedList};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct OrderQueue {
-    orders: LinkedList<Arc<Mutex<Order>>>,
+    orders: VecDeque<Arc<Mutex<Order>>>,
     pub volume: f64,
 }
 
 impl OrderQueue {
     fn new() -> OrderQueue {
         OrderQueue {
-            orders: LinkedList::new(),
+            orders: VecDeque::new(),
             volume: 0.0,
         }
     }
 
-    fn add(&mut self, order: Arc<Mutex<Order>>) {
-        let order = order.lock().unwrap();
+    fn add(&mut self, order: &Arc<Mutex<Order>>) {
+        {
+            let order = order.lock().unwrap();
+            self.volume += order.volume;
+        }
 
-        self.volume += order.volume;
-        self.orders.push_back(Arc::new(Mutex::new(order.clone())));
+        self.orders.push_back(order.clone());
     }
 }
 
@@ -43,25 +45,28 @@ impl OrderSide {
     /// `add_order` adds an order to the order side, keeping track of the order in two different
     /// places, `price_tree` and `price_map`, where orders are kept in a queue for each price level.
     pub fn add_order(&mut self, order: Arc<Mutex<Order>>) {
-        let clone = order.clone();
-        let order = order.lock().expect("order lock failed");
-        let (price, volume) = (order.price, order.volume);
-        drop(order);
+        let (price, volume);
+
+        {
+            let order = order.lock().expect("order lock failed");
+            price = order.price;
+            volume = order.volume;
+        }
 
         match self.price_map.get_mut(price.to_string().as_str()) {
             Some(queue) => {
                 let mut queue = queue.lock().expect("order queue lock failed");
-
-                queue.add(clone)
+                queue.add(&order)
             }
             None => {
                 let mut queue = OrderQueue::new();
-                queue.add(clone);
+                queue.add(&order);
 
                 let queue = Arc::new(Mutex::new(queue));
 
                 self.price_map.insert(price.to_string(), queue.clone());
                 self.price_tree.insert(price.to_string(), queue.clone());
+
                 self.depth += 1;
             }
         }
@@ -70,17 +75,19 @@ impl OrderSide {
         self.volume += volume;
     }
 
-    pub fn get_max_price(&mut self) -> Option<String> {
+    pub fn get_max_price(&mut self) -> Option<f64> {
         if let Some(entry) = self.price_tree.last_entry() {
-            Some(entry.key().clone())
+            let price = entry.key().parse::<f64>().expect("failed to parse price");
+            Some(price)
         } else {
             None
         }
     }
 
-    pub fn get_min_price(&mut self) -> Option<String> {
+    pub fn get_min_price(&mut self) -> Option<f64> {
         if let Some(entry) = self.price_tree.first_entry() {
-            Some(entry.key().clone())
+            let price = entry.key().parse::<f64>().expect("failed to parse price");
+            Some(price)
         } else {
             None
         }

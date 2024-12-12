@@ -83,12 +83,38 @@ impl OrderBook {
         self.match_orders()
     }
 
-    pub fn get_best_ask(&mut self) -> Option<String> {
+    pub fn get_best_ask(&mut self) -> Option<f64> {
         self.asks.get_min_price()
     }
 
-    pub fn get_best_bid(&mut self) -> Option<String> {
+    pub fn get_best_bid(&mut self) -> Option<f64> {
         self.bids.get_max_price()
+    }
+
+    /// # Panics
+    #[must_use]
+    pub fn get_volume_at_ask_price(&self, price: f64) -> Option<f64> {
+        match self.asks.price_tree.get(&price.to_string()) {
+            Some(queue) => {
+                let orders = queue.lock().expect("order queue lock failed");
+
+                Some(orders.volume)
+            }
+            None => None,
+        }
+    }
+
+    /// # Panics
+    #[must_use]
+    pub fn get_volume_at_bid_price(&self, price: f64) -> Option<f64> {
+        match self.bids.price_tree.get(&price.to_string()) {
+            Some(queue) => {
+                let orders = queue.lock().expect("order queue lock failed");
+
+                Some(orders.volume)
+            }
+            None => None,
+        }
     }
 
     fn match_orders(&self) -> Result<Vec<Trade>, OrderBookError> {
@@ -107,19 +133,18 @@ impl OrderBook {
             let queue = v.lock().expect("order queue lock failed");
 
             let mut col_count = 0;
-            for _ in (1..(queue.volume / 2f64) as u64) {
+            for _ in 1..(queue.volume as u64 / 2) {
                 col_count += 1;
             }
 
             for i in 0..DISPLAY_NUM_COLS - 5 {
                 if i >= col_count {
                     print!(" ");
-                } else {
                 }
             }
 
             print!("{} ", queue.volume);
-            for _ in (0..(queue.volume / 2f64) as u64) {
+            for _ in 1..(queue.volume as u64) / 2 {
                 print!("█");
             }
 
@@ -129,21 +154,22 @@ impl OrderBook {
 }
 
 impl Display for OrderBook {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        print!("Asks ");
-        for i in 0..DISPLAY_NUM_COLS {
-            print!("-")
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Asks ")?;
+        for _ in 0..DISPLAY_NUM_COLS {
+            write!(f, "-")?;
         }
-        println!();
+        writeln!(f)?;
 
         self.display_orderside(&self.asks, true);
 
-        print!("Bids ");
-        for i in 0..DISPLAY_NUM_COLS {
-            print!("-")
+        write!(f, "Bids ")?;
+        for _ in 0..DISPLAY_NUM_COLS {
+            write!(f, "-")?;
         }
-        println!();
+        writeln!(f, "-")?;
 
-        Ok(self.display_orderside(&self.bids, false))
+        self.display_orderside(&self.bids, true);
+        Ok(())
     }
 }

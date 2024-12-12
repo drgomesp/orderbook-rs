@@ -1,3 +1,7 @@
+use crate::order::Order;
+use crate::order::OrderKind::{Buy, Sell};
+use crate::orderbook::OrderBook;
+
 pub mod order;
 pub mod orderbook;
 mod orderside;
@@ -22,13 +26,10 @@ fn main() {
     let _ = ob.add_order(b2).expect("add order failed");
     let _ = ob.add_order(b3).expect("add order failed");
 
-    println!("{ob}")
+    println!("{ob}");
 }
 
-use crate::order::Order;
-use crate::order::OrderKind::{Buy, Sell};
-use crate::orderbook::OrderBook;
-
+#[cfg(test)]
 mod tests {
     use crate::order::Order;
     use crate::order::OrderKind::{Buy, Sell};
@@ -40,8 +41,8 @@ mod tests {
 
         assert_eq!(order.kind, Buy);
         assert_eq!(order.id, "buy-1");
-        assert_eq!(order.price, 100.0);
-        assert_eq!(order.volume, 10.0);
+        assert!(order.price.eq(&100.0));
+        assert!(order.volume.eq(&10.0));
     }
 
     #[test]
@@ -50,8 +51,8 @@ mod tests {
 
         assert_eq!(order.kind, Sell);
         assert_eq!(order.id, "sell-1");
-        assert_eq!(order.price, 50.0);
-        assert_eq!(order.volume, 5.0);
+        assert!(order.price.eq(&50.0));
+        assert!(order.volume.eq(&5.0));
     }
 
     #[test]
@@ -63,6 +64,31 @@ mod tests {
         let result = ob.add_order(order);
 
         assert!(result.is_err(), "expected Err for duplicate order id.");
+    }
+
+    #[test]
+    fn test_orderbook() {
+        let mut ob = OrderBook::new();
+
+        let s1 = Order::new(Sell, "sell-1".into(), 99.95, 10.0);
+        let s2 = Order::new(Sell, "sell-2".into(), 99.95, 20.0);
+        let s3 = Order::new(Sell, "sell-3".into(), 99.95, 30.0);
+
+        let b1 = Order::new(Buy, "buy-1".into(), 99.95, 10.0);
+        let b2 = Order::new(Buy, "buy-2".into(), 99.95, 20.0);
+
+        ob.add_order(s1).expect("add order failed");
+        ob.add_order(s2).expect("add order failed");
+        ob.add_order(s3).expect("add order failed");
+
+        ob.add_order(b1).expect("add order failed");
+        ob.add_order(b2).expect("add order failed");
+
+        let volume_at_ask_price = ob.get_volume_at_ask_price(99.95).unwrap();
+        let volume_at_bid_price = ob.get_volume_at_bid_price(99.95).unwrap();
+
+        assert!(volume_at_ask_price.eq(&60.0));
+        assert!(volume_at_bid_price.eq(&30.0));
     }
 
     #[test]
@@ -86,7 +112,7 @@ mod tests {
         let best_ask = ob.get_best_ask().expect("best ask failed");
         let best_bid = ob.get_best_bid().expect("best bid failed");
 
-        assert_eq!(ob.get_best_ask().unwrap(), "99.94");
-        assert_eq!(ob.get_best_bid().unwrap(), "99.95");
+        assert!(best_ask.eq(&99.94));
+        assert!(best_bid.eq(&99.95));
     }
 }
