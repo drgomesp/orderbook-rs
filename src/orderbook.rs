@@ -74,8 +74,8 @@ impl OrderBook {
         let order = Arc::new(Mutex::new(order));
 
         match kind {
-            OrderKind::Buy => self.bids.add_order(order.clone()),
-            OrderKind::Sell => self.asks.add_order(order.clone()),
+            OrderKind::Buy => self.bids.add_order(&order),
+            OrderKind::Sell => self.asks.add_order(&order),
         }
 
         self.orders.insert(id, order);

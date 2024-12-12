@@ -44,7 +44,7 @@ pub struct OrderSide {
 impl OrderSide {
     /// `add_order` adds an order to the order side, keeping track of the order in two different
     /// places, `price_tree` and `price_map`, where orders are kept in a queue for each price level.
-    pub fn add_order(&mut self, order: Arc<Mutex<Order>>) {
+    pub fn add_order(&mut self, order: &Arc<Mutex<Order>>) {
         let (price, volume);
 
         {
@@ -53,22 +53,19 @@ impl OrderSide {
             volume = order.volume;
         }
 
-        match self.price_map.get_mut(price.to_string().as_str()) {
-            Some(queue) => {
-                let mut queue = queue.lock().expect("order queue lock failed");
-                queue.add(&order)
-            }
-            None => {
-                let mut queue = OrderQueue::new();
-                queue.add(&order);
+        if let Some(queue) = self.price_map.get_mut(price.to_string().as_str()) {
+            let mut queue = queue.lock().expect("order queue lock failed");
+            queue.add(order);
+        } else {
+            let mut queue = OrderQueue::new();
+            queue.add(order);
 
-                let queue = Arc::new(Mutex::new(queue));
+            let queue = Arc::new(Mutex::new(queue));
 
-                self.price_map.insert(price.to_string(), queue.clone());
-                self.price_tree.insert(price.to_string(), queue.clone());
+            self.price_map.insert(price.to_string(), queue.clone());
+            self.price_tree.insert(price.to_string(), queue.clone());
 
-                self.depth += 1;
-            }
+            self.depth += 1;
         }
 
         self.length += 1;

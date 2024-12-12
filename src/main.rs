@@ -1,32 +1,58 @@
 use crate::order::Order;
 use crate::order::OrderKind::{Buy, Sell};
 use crate::orderbook::OrderBook;
+use std::time::Instant;
 
 pub mod order;
 pub mod orderbook;
 mod orderside;
 
 fn main() {
-    let mut ob = OrderBook::new();
-    let s1 = Order::new(Sell, "sell-1".into(), 99.94, 10.0);
-    let s2 = Order::new(Sell, "sell-2".into(), 99.96, 25.0);
-    let s3 = Order::new(Sell, "sell-3".into(), 99.98, 20.0);
-    let s4 = Order::new(Sell, "sell-4".into(), 99.94, 25.0);
+    let mut orderbook = OrderBook::new();
 
-    let b1 = Order::new(Buy, "buy-1".into(), 99.93, 10.0);
-    let b2 = Order::new(Buy, "buy-2".into(), 99.95, 20.0);
-    let b3 = Order::new(Buy, "buy-3".into(), 99.95, 10.0);
+    // let s1 = Order::new(Sell, "sell-1".into(), 99.94, 10.0);
+    // let s2 = Order::new(Sell, "sell-2".into(), 99.96, 25.0);
+    // let s3 = Order::new(Sell, "sell-3".into(), 99.98, 20.0);
+    // let s4 = Order::new(Sell, "sell-4".into(), 99.94, 25.0);
+    //
+    // let b1 = Order::new(Buy, "buy-1".into(), 99.93, 10.0);
+    // let b2 = Order::new(Buy, "buy-2".into(), 99.95, 20.0);
+    // let b3 = Order::new(Buy, "buy-3".into(), 99.95, 10.0);
+    //
+    // let _ = ob.add_order(s1).expect("add order failed");
+    // let _ = ob.add_order(s2).expect("add order failed");
+    // let _ = ob.add_order(s3).expect("add order failed");
+    // let _ = ob.add_order(s4).expect("add order failed");
+    //
+    // let _ = ob.add_order(b1).expect("add order failed");
+    // let _ = ob.add_order(b2).expect("add order failed");
+    // let _ = ob.add_order(b3).expect("add order failed");
 
-    let _ = ob.add_order(s1).expect("add order failed");
-    let _ = ob.add_order(s2).expect("add order failed");
-    let _ = ob.add_order(s3).expect("add order failed");
-    let _ = ob.add_order(s4).expect("add order failed");
+    // println!("{ob}");
 
-    let _ = ob.add_order(b1).expect("add order failed");
-    let _ = ob.add_order(b2).expect("add order failed");
-    let _ = ob.add_order(b3).expect("add order failed");
+    let mut timer = Instant::now();
+    let mut count = 0;
 
-    println!("{ob}");
+    for i in 0..3_000_000 {
+        orderbook
+            .add_order(Order::new(
+                if i % 2 == 0 { Sell } else { Buy },
+                format!("order-{i}"),
+                99.95,
+                10.0,
+            ))
+            .expect("failed to add order");
+
+        count += 1;
+
+        if timer.elapsed().as_secs() >= 1 {
+            println!("{count} adds/s");
+            count = 0;
+            timer = Instant::now();
+        }
+    }
+
+    // println!("{orderbook}");
 }
 
 #[cfg(test)]
