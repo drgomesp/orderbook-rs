@@ -16,6 +16,7 @@ pub struct Order {
 }
 
 impl Order {
+    #[must_use]
     pub fn new(kind: OrderKind, id: String, price: f64, volume: f64) -> Order {
         Order {
             kind,

@@ -1,6 +1,9 @@
 use crate::order::Order;
+use crate::orderbook::OrderPtr;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
+
+pub type OrderQueuePtr = Arc<Mutex<OrderQueue>>;
 
 #[derive(Debug)]
 pub struct OrderQueue {
@@ -17,12 +20,8 @@ impl OrderQueue {
     }
 
     fn add(&mut self, order: &Arc<Mutex<Order>>) {
-        {
-            let order = order.lock().unwrap();
-            self.volume += order.volume;
-        }
-
         self.orders.push_back(order.clone());
+        self.volume += order.lock().unwrap().volume;
     }
 }
 
@@ -30,11 +29,11 @@ impl OrderQueue {
 pub struct OrderSide {
     /// `price_tree` is an ordered map (binary tree) where the key
     /// is the price and the value is the order list for that price.
-    pub price_tree: BTreeMap<String, Arc<Mutex<OrderQueue>>>,
+    pub price_tree: BTreeMap<String, OrderQueuePtr>,
 
     /// `price_map` is a hash map where the key is the price
     /// and the value is the order list for that price.
-    price_map: HashMap<String, Arc<Mutex<OrderQueue>>>,
+    price_map: HashMap<String, OrderQueuePtr>,
 
     length: usize,
     depth: usize,
@@ -44,7 +43,7 @@ pub struct OrderSide {
 impl OrderSide {
     /// `add_order` adds an order to the order side, keeping track of the order in two different
     /// places, `price_tree` and `price_map`, where orders are kept in a queue for each price level.
-    pub fn add_order(&mut self, order: &Arc<Mutex<Order>>) {
+    pub fn add_order(&mut self, order: &OrderPtr) {
         let (price, volume);
 
         {
