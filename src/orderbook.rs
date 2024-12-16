@@ -1,5 +1,5 @@
 use crate::order::{Order, OrderKind};
-use crate::orderside::{OrderQueue, OrderQueuePtr, OrderSide};
+use crate::orderside::{OrderQueuePtr, OrderSide};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;

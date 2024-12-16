@@ -1,4 +1,3 @@
-use crate::order::Order;
 use crate::orderbook::OrderPtr;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
@@ -7,7 +6,7 @@ pub type OrderQueuePtr = Arc<Mutex<OrderQueue>>;
 
 #[derive(Debug)]
 pub struct OrderQueue {
-    orders: VecDeque<Arc<Mutex<Order>>>,
+    orders: VecDeque<OrderPtr>,
     pub volume: f64,
 }
 
@@ -19,7 +18,7 @@ impl OrderQueue {
         }
     }
 
-    fn add(&mut self, order: &Arc<Mutex<Order>>) {
+    fn add(&mut self, order: &OrderPtr) {
         self.orders.push_back(order.clone());
         self.volume += order.lock().unwrap().volume;
     }
@@ -27,8 +26,8 @@ impl OrderQueue {
 
 #[derive(Debug)]
 pub struct OrderSide {
-    /// `price_tree` is an ordered map (binary tree) where the key
-    /// is the price and the value is the order list for that price.
+    #[doc = r"`price_tree` is an ordered map (binary tree) where the key
+is the price and the value is the order list for that price."]
     pub price_tree: BTreeMap<String, OrderQueuePtr>,
 
     /// `price_map` is a hash map where the key is the price

@@ -27,6 +27,7 @@ fn main() {
 
         if timer.elapsed().as_secs() >= 1 {
             println!("{count} adds/s");
+
             count = 0;
             timer = Instant::now();
         }
