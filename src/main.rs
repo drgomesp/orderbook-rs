@@ -1,10 +1,11 @@
 use crate::order::Order;
 use crate::order::OrderKind::{Buy, Sell};
 use crate::orderbook::OrderBook;
+use num_format::{Locale, ToFormattedString};
 use std::time::Instant;
 
-pub mod order;
-pub mod orderbook;
+mod order;
+mod orderbook;
 mod orderside;
 
 fn main() {
@@ -19,19 +20,40 @@ fn main() {
                 if i % 2 == 0 { Sell } else { Buy },
                 format!("order-{i}"),
                 99.95,
-                10.0,
+                1.0,
             ))
             .expect("failed to add order");
 
         count += 1;
 
         if timer.elapsed().as_secs() >= 1 {
-            println!("{count} adds/s");
+            println!("{} adds/s", count.to_formatted_string(&Locale::en));
 
             count = 0;
             timer = Instant::now();
         }
     }
+
+    println!("=======================");
+
+    let best_ask = orderbook.get_best_ask().unwrap();
+    let best_bid = orderbook.get_best_bid().unwrap();
+
+    println!("best ask: {:?}", best_ask);
+    println!("best bid: {:?}", best_bid);
+
+    println!(
+        "ask volume at price {}: {}",
+        best_ask,
+        (orderbook.get_volume_at_ask_price(best_ask).unwrap() as u64)
+            .to_formatted_string(&Locale::en)
+    );
+    println!(
+        "bid volume at price {}: {}",
+        best_bid,
+        (orderbook.get_volume_at_bid_price(best_bid).unwrap() as u64)
+            .to_formatted_string(&Locale::en)
+    );
 
     // println!("{orderbook}");
 }
@@ -68,13 +90,14 @@ mod tests {
         let order = Order::new(Sell, "sell-1".into(), 50.0, 5.0);
 
         let _ = ob.add_order(order.clone());
+        let _ = ob.add_order(order.clone());
         let result = ob.add_order(order);
 
         assert!(result.is_err(), "expected Err for duplicate order id.");
     }
 
     #[test]
-    fn test_orderbook() {
+    fn test_orderbook_volume_at_price() {
         let mut ob = OrderBook::new();
 
         let s1 = Order::new(Sell, "sell-1".into(), 99.95, 10.0);
